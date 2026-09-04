@@ -1,0 +1,45 @@
+name: Build onboarding index
+
+on:
+  push:
+    paths:
+      - '.payload/part21'
+
+permissions:
+  contents: write
+
+jobs:
+  build-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Rebuild exact uploaded HTML
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, lzma, hashlib
+
+          parts = sorted(Path('.payload').glob('part*'))
+          encoded = ''.join(p.read_text(encoding='ascii').strip() for p in parts)
+          html = lzma.decompress(base64.b85decode(encoded.encode('ascii')))
+          expected = '49c3842b1ce3be614a0f2087bbe3976418454a26ef78492e80a43465b0459899'
+          actual = hashlib.sha256(html).hexdigest()
+          if actual != expected:
+              raise SystemExit(f'SHA256 mismatch: {actual}')
+          Path('index.html').write_bytes(html)
+          print(f'index.html: {len(html)} bytes, sha256={actual}')
+          PY
+
+      - name: Commit index.html and clean bootstrap files
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf .payload
+          rm -f .github/workflows/bootstrap-index.yml
+          git add -A
+          git commit -m "Add onboarding portal as index.html"
+          git push
