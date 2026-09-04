@@ -33,13 +33,12 @@ jobs:
           print(f'index.html: {len(html)} bytes, sha256={actual}')
           PY
 
-      - name: Commit index.html and clean bootstrap files
+      - name: Commit index.html and clean payload
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -rf .payload
-          rm -f .github/workflows/bootstrap-index.yml
           git add -A
           git commit -m "Add onboarding portal as index.html"
           git push
